@@ -7,6 +7,13 @@ from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, dat
 from pyspark.sql.functions import  to_timestamp, from_unixtime, unix_timestamp
 
 def create_env():
+    
+    '''
+    function: to set credentials from dl.cfg file
+    input = none
+    output = environmental settings set to the aws credentials to access S3 bucket
+    '''
+    
     config = configparser.ConfigParser()
     config.read('dl.cfg')
 
@@ -15,6 +22,13 @@ def create_env():
 
 
 def create_spark_session():
+    
+    '''
+    function: instantiate spark session
+    input = none
+    output = instantiated spark session
+    '''
+
     spark = SparkSession \
         .builder \
         .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.5") \
@@ -23,6 +37,15 @@ def create_spark_session():
 
 
 def process_song_data(spark, input_data, output_data):
+    
+    '''
+    function: use spark to process song json files from S3 source
+    input = spark - spark session
+            input_data - root AWS S3 bucket
+            output_data - AWS S3 bucket and directory to store file
+    output = csv and parquet files for song, artist tables
+    '''
+
     # get filepath to song data file
     song_path = input_data + "/song-data/*/*/*/"
     print(song_path)
@@ -105,6 +128,15 @@ def process_song_data(spark, input_data, output_data):
 
 
 def process_log_data(spark, input_data, output_data):
+    
+    '''
+    function: use spark to process log json files from S3 source
+    input = spark - spark session
+            input_data - root AWS S3 bucket
+            output_data - AWS S3 bucket and directory to store file
+    output = csv and parquet files for user, time, and songplay tables
+    '''
+    
     # get filepath to log data file
     log_path = input_data + "/log-data/*.json"
     print(log_path)
