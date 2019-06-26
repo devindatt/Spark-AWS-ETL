@@ -55,23 +55,26 @@ def process_song_data(spark, input_data, output_data):
     print('####debugging: process_song_data, before sql query of song_table')
 
     songs_table = spark.sql("""
-    SELECT song_id, title, artist_id, year, duration 
+    SELECT DISTINCT
+        song_id, 
+        title, 
+        artist_id, 
+        year, 
+        duration 
     FROM song_data """)
 
     print('####debugging: process_song_data, after sql query of song_table')
 
 
+    # write songs table to csv files
+    out_path = "s3a://dend-bucket-ddatt/sparkify_songs_table_small.csv"
+    songs_table.write.save(out_path, format = 'csv', header = True)
+
     # write songs table to parquet files partitioned by year and artist
-#    out_path = "s3a://dend-bucket-ddatt/sparkify_songs_table_small.csv"
-#    songs_table.write.save(out_path, format = 'csv', header = True)
-
     print('####debugging: process_song_data, before writing parquet song_table ')
-
     songs_table.write.partitionBy("year", "artist_id").parquet(os.path.join(output_data,"songs"), "overwrite")
-
     print('####debugging: process_song_data, after writing parquet song_table ')
 
-    
     
     #----------------------------------------------------------------------------
     #  extract the following columns to create artists table using spark SQL
@@ -80,18 +83,24 @@ def process_song_data(spark, input_data, output_data):
     print('####debugging: process_song_data, before sql query of artists_table')
 
     artists_table = spark.sql("""
-    SELECT artist_id, artist_name, artist_location, artist_latitude, artist_longitude 
+    SELECT DISTINCT
+        artist_id,
+        artist_name,
+        artist_location,
+        artist_latitude, 
+        artist_longitude 
     FROM song_data """)
 
     print('####debugging: process_song_data, after sql query of artists_table')
 
     
-    # write artists table to parquet files
-
+    # write songs table to csv files
+    out_path = "s3a://dend-bucket-ddatt/sparkify_artists_table_small.csv"
+    artists_table.write.save(out_path, format = 'csv', header = True)
+        
+    # write artists table to parquet files partitioned by artist_id
     print('####debugging: process_song_data, before writing parquet song_table ')
-
     artists_table.write.partitionBy("artist_id").parquet(os.path.join(output_data,"artists"), "overwrite")
-
     print('####debugging: process_song_data, after writing parquet song_table ')
 
 
@@ -140,20 +149,18 @@ def process_log_data(spark, input_data, output_data):
     
 #    df.filter(df['page'] = 'NextSong')
     df = spark.sql("""
-    SELECT * 
+    SELECT DISTINCT * 
     FROM log_data
     WHERE page = 'NextSong' """)
 
     print('####debugging: process_log_data, after sql query of df ')
 
 
-#    print('####debugging: process_log_data, before writing csv df_byNextSong ')
-    
-    #Output a csv to confirm the schema
-#    out_path = "s3a://dend-bucket-ddatt/df_byNextSong.csv"
-#    df.write.save(out_path, format = 'csv', header = True)
-
-#    print('####debugging: process_log_data, after writing csv df_byNextSong  ')
+    #Output log data as a csv to confirm the schema    
+    print('####debugging: process_log_data, before writing csv logdata_byNextSong ')
+    out_path = "s3a://dend-bucket-ddatt/df_byNextSong.csv"
+    df.write.save(out_path, format = 'csv', header = True)
+    print('####debugging: process_log_data, after writing csv logdata_byNextSong ')
 
     
     
@@ -188,7 +195,7 @@ def process_log_data(spark, input_data, output_data):
     
     print('####debugging: process_log_data, before sql query of users_table ')
     users_table = spark.sql("""
-    SELECT 
+    SELECT DISTINCT 
         userid, 
         firstName,
         lastName, 
@@ -199,13 +206,18 @@ def process_log_data(spark, input_data, output_data):
 
     users_table.printSchema()
 
-    
+
+    # write users table to csv files
+    print('####debugging: process_log_data, before writing csv users_table ')    
+    out_path = "s3a://dend-bucket-ddatt/users_table_small.csv"
+    users_table.write.save(out_path, format = 'csv', header = True)
+    print('####debugging: process_log_data, after writing csv users_table ')    
+
+        
     # write users table to parquet files
     print('####debugging: process_log_data, before writing parquet users_table ')
     users_table.write.partitionBy("userid").parquet(os.path.join(output_data,"users"), "overwrite")
     print('####debugging: process_log_data, after writing parquet users_table ')
-
-
 
 
     #----------------------------------------------------------------------------
@@ -241,16 +253,17 @@ def process_log_data(spark, input_data, output_data):
 
     time_table.printSchema()
     
-#    print('####debugging: process_log_data, before writing csv time_table ')    
-#    out_path = "s3a://dend-bucket-ddatt/time_table.csv"
-#    time_table.write.save(out_path, format = 'csv', header = True)
-#    print('####debugging: process_log_data, after writing csv time_table ')
+    # write time table to csv files
+    print('####debugging: process_log_data, before writing csv time_table ')    
+    out_path = "s3a://dend-bucket-ddatt/time_table_small.csv"
+    time_table.write.save(out_path, format = 'csv', header = True)
+    print('####debugging: process_log_data, after writing csv time_table ')
 
 
     # write time table to parquet files partitioned by year and month
-#    print('####debugging: process_log_data, before writing parquet time_table ')
-    time_table.write.partitionBy("timestamp").parquet(os.path.join(output_data,"time"), "overwrite")
-#    print('####debugging: process_log_data, after writing parquet time_table ')
+    print('####debugging: process_log_data, before writing parquet time_table ')
+    time_table.write.partitionBy("year", "month").parquet(os.path.join(output_data,"time"), "overwrite")
+    print('####debugging: process_log_data, after writing parquet time_table ')
 
 
 
@@ -262,7 +275,9 @@ def process_log_data(spark, input_data, output_data):
     print('####debugging: process_log_data, before sql query of songplays_table ')
     songplays_table = spark.sql("""
     SELECT DISTINCT 
-        start_time,
+        ts as start_time,
+        month(timestamp) as month,
+        year(timestamp) as year,
         log_data.userId as user_id,
         log_data.level,
         song_data.song_id,
@@ -315,15 +330,17 @@ def process_log_data(spark, input_data, output_data):
      |-- year: long (nullable = true)
     '''    
 
-#    print('####debugging: process_log_data, before writing csv songplays_table ')    
-#    out_path = "s3a://dend-bucket-ddatt/songplays_table.csv"
-#    songplays_table.write.save(out_path, format = 'csv', header = True)
-#    print('####debugging: process_log_data, after writing csv songplays_table ')        
+    
+    # write songplays table to csv files
+    print('####debugging: process_log_data, before writing csv songplays_table ')    
+    out_path = "s3a://dend-bucket-ddatt/songplays_table.csv"
+    songplays_table.write.save(out_path, format = 'csv', header = True)
+    print('####debugging: process_log_data, after writing csv songplays_table ')        
 
     
     # write songplays table to parquet files partitioned by year and month
     print('####debugging: process_log_data, before writing parquet songplays_table ')
-    songplays_table.write.partitionBy("start_time").parquet(os.path.join(output_data,"songplays"), "overwrite")
+    songplays_table.write.partitionBy("year", "month").parquet(os.path.join(output_data,"songplays"), "overwrite")
     print('####debugging: process_log_data, after writing parquet songplays_table ')
 
 
@@ -350,4 +367,3 @@ def main():
     
 if __name__ == "__main__":
     main()
-
