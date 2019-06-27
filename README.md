@@ -139,6 +139,9 @@ time_table.write.partitionBy("timestamp").parquet(os.path.join(output_data,"time
 ETL Spark console output run:
 ![N|Solid](https://github.com/devindatt/aws-spark-etl/blob/master/images/qt_etl_console_output.gif)
 
+ETL Notebook on AWS EMR Cluster output run:
+![N|Solid](https://github.com/devindatt/aws-spark-etl/blob/master/images/emr_notebook_summary2.png)
+
 AWS files after files writen back to the AWS bucket:
 ![N|Solid](https://github.com/devindatt/aws-spark-etl/blob/master/images/aws_writing_directory.png)
 
